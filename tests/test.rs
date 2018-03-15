@@ -2,7 +2,7 @@
 
 #[macro_use] extern crate partial_function;
 
-use partial_function::{PartialFn, PartialFnError};
+use partial_function::PartialFn;
 
 #[derive(Debug)]
 enum Test {
@@ -23,24 +23,24 @@ fn handles_basic_functionality() {
 	assert_eq!(pf.is_defined_at("foo"), true);
 	assert_eq!(pf.is_defined_at("bar"), true);
 	assert_eq!(pf.is_defined_at("baz"), false);
-	assert!(pf("foo").is_ok() && pf("foo").ok() == Some(1));
-	assert!(pf("bar").is_ok() && pf("bar").ok() == Some(2));
-	assert!(pf("baz").is_err());
+	assert!(pf("foo").is_some() && pf("foo") == Some(1));
+	assert!(pf("bar").is_some() && pf("bar") == Some(2));
+	assert!(pf("baz").is_none());
 }
 
 #[test]
 fn handles_variable_capture() {
 	let pf = partial_function! {
 		Test::Foo(a) => a,
-		Test::Bar(b) => 1
+		Test::Bar(_b) => 1
 	};
 
 	assert_eq!(pf.is_defined_at(Test::Foo(2)), true);
 	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), true);
 	assert_eq!(pf.is_defined_at(Test::Baz(true)), false);
-	assert!(pf(Test::Foo(2)).is_ok() && pf(Test::Foo(2)).ok() == Some(2));
-	assert!(pf(Test::Bar(1.0)).is_ok() && pf(Test::Bar(1.0)).ok() == Some(1));
-	assert!(pf(Test::Baz(true)).is_err());
+	assert!(pf(Test::Foo(2)).is_some() && pf(Test::Foo(2)) == Some(2));
+	assert!(pf(Test::Bar(1.0)).is_some() && pf(Test::Bar(1.0)) == Some(1));
+	assert!(pf(Test::Baz(true)).is_none());
 }
 
 #[test]
@@ -53,46 +53,8 @@ fn handles_non_local_variable_in_expression() {
 
 	assert_eq!(pf.is_defined_at(Test::Foo(1)), true);
 	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), false);
-	assert!(pf(Test::Foo(1)).is_ok() && pf(Test::Foo(1)).ok() == Some(2));
-	assert!(pf(Test::Bar(1.0)).is_err());
-}
-
-#[test]
-fn testTest() {
-	let c1 = 1;
-	let c2 = 2;
-
-// 	let pf = partial_function! {
-// 		Test::Foo(a) if a == 1 => a + c1,
-// 		Test::Foo(a) if a == 2 => a + c2
-// 	};
-
-    let pf =
-        PartialFn::new(Box::new(|arg|
-                                    {
-                                        match arg {
-                                            Test::Foo(a) if a == 1 => Ok(a + c1),
-                                            Test::Foo(a) if a == 2 => Ok(a + c2),
-                                            _ =>
-                                            Err(PartialFnError::MatchError(arg)),
-                                        }
-                                    }),
-                       Box::new(|arg|
-                                    {
-                                        match arg {
-                                            Test::Foo(a) if a == 1 => true,
-                                            Test::Foo(a) if a == 2 => true,
-                                            _ => false,
-                                        }
-                                    }));
-
-	assert_eq!(pf.is_defined_at(Test::Foo(1)), true);
-	assert_eq!(pf.is_defined_at(Test::Foo(2)), true);
-	assert_eq!(pf.is_defined_at(Test::Foo(3)), false);
-	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), false);
-	assert!(pf(Test::Foo(1)).is_ok() && pf(Test::Foo(1)).ok() == Some(2));
-	assert!(pf(Test::Foo(2)).is_ok() && pf(Test::Foo(2)).ok() == Some(4));
-	assert!(pf(Test::Bar(1.0)).is_err());
+	assert!(pf(Test::Foo(1)).is_some() && pf(Test::Foo(1)) == Some(2));
+	assert!(pf(Test::Bar(1.0)).is_none());
 }
 
 #[test]
@@ -109,9 +71,9 @@ fn handles_pattern_guards() {
 	assert_eq!(pf.is_defined_at(Test::Foo(2)), true);
 	assert_eq!(pf.is_defined_at(Test::Foo(3)), false);
 	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), false);
-	assert!(pf(Test::Foo(1)).is_ok() && pf(Test::Foo(1)).ok() == Some(2));
-	assert!(pf(Test::Foo(2)).is_ok() && pf(Test::Foo(2)).ok() == Some(4));
-	assert!(pf(Test::Bar(1.0)).is_err());
+	assert!(pf(Test::Foo(1)).is_some() && pf(Test::Foo(1)) == Some(2));
+	assert!(pf(Test::Foo(2)).is_some() && pf(Test::Foo(2)) == Some(4));
+	assert!(pf(Test::Bar(1.0)).is_none());
 }
 
 #[test]
@@ -129,10 +91,10 @@ fn handles_pattern_alternation() {
 	assert_eq!(pf.is_defined_at(3), true);
 	assert_eq!(pf.is_defined_at(4), false);
 
-	assert!(pf(1).is_ok() && pf(1).ok() == Some("foo"));
-	assert!(pf(2).is_ok() && pf(2).ok() == Some("foo"));
-	assert!(pf(3).is_ok() && pf(3).ok() == Some("bar"));
-	assert!(pf(4).is_err());
+	assert!(pf(1).is_some() && pf(1) == Some("foo"));
+	assert!(pf(2).is_some() && pf(2) == Some("foo"));
+	assert!(pf(3).is_some() && pf(3) == Some("bar"));
+	assert!(pf(4).is_none());
 }
 
 #[test]
@@ -145,8 +107,8 @@ fn handles_inclusive_range() {
 	assert_eq!(pf.is_defined_at(2), true);
 	assert_eq!(pf.is_defined_at(3), true);
 	assert_eq!(pf.is_defined_at(4), false);
-	assert!(pf(1).is_ok() && pf(1).ok() == Some("foo"));
-	assert!(pf(4).is_err());
+	assert!(pf(1).is_some() && pf(1) == Some("foo"));
+	assert!(pf(4).is_none());
 }
 
 #[test]
@@ -157,6 +119,6 @@ fn handles_pattern_binding() {
 
 	assert_eq!(pf.is_defined_at("foo"), true);
 	assert_eq!(pf.is_defined_at("bar"), false);
-	assert!(pf("foo").is_ok() && pf("foo").ok() == Some("foo"));
-	assert!(pf("bar").is_err());
+	assert!(pf("foo").is_some() && pf("foo") == Some("foo"));
+	assert!(pf("bar").is_none());
 }
