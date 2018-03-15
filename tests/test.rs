@@ -11,6 +11,16 @@ enum Test {
 	Baz(bool)
 }
 
+macro_rules! test_partial_function (
+	($var:expr, $lhs:expr, None) => (
+		assert!(!$var.is_defined_at($lhs) && $var($lhs).is_none())
+	);
+	($var:expr, $lhs:expr, $rhs:expr) => (
+		assert!($var.is_defined_at($lhs) && $var($lhs).is_some() && $var($lhs) == Some($rhs))
+	);
+);
+
+
 #[cfg(test)]
 
 #[test]
@@ -20,12 +30,9 @@ fn handles_basic_functionality() {
 		"bar" => 2
 	};
 
-	assert_eq!(pf.is_defined_at("foo"), true);
-	assert_eq!(pf.is_defined_at("bar"), true);
-	assert_eq!(pf.is_defined_at("baz"), false);
-	assert!(pf("foo").is_some() && pf("foo") == Some(1));
-	assert!(pf("bar").is_some() && pf("bar") == Some(2));
-	assert!(pf("baz").is_none());
+	test_partial_function!(pf, "foo", 1);
+	test_partial_function!(pf, "bar", 2);
+	test_partial_function!(pf, "baz", None);
 }
 
 #[test]
@@ -35,12 +42,9 @@ fn handles_variable_capture() {
 		Test::Bar(_b) => 1
 	};
 
-	assert_eq!(pf.is_defined_at(Test::Foo(2)), true);
-	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), true);
-	assert_eq!(pf.is_defined_at(Test::Baz(true)), false);
-	assert!(pf(Test::Foo(2)).is_some() && pf(Test::Foo(2)) == Some(2));
-	assert!(pf(Test::Bar(1.0)).is_some() && pf(Test::Bar(1.0)) == Some(1));
-	assert!(pf(Test::Baz(true)).is_none());
+	test_partial_function!(pf, Test::Foo(2), 2);
+	test_partial_function!(pf, Test::Bar(1.0), 1);
+	test_partial_function!(pf, Test::Baz(true), None);
 }
 
 #[test]
@@ -51,10 +55,8 @@ fn handles_non_local_variable_in_expression() {
 		Test::Foo(a) => a + c
 	};
 
-	assert_eq!(pf.is_defined_at(Test::Foo(1)), true);
-	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), false);
-	assert!(pf(Test::Foo(1)).is_some() && pf(Test::Foo(1)) == Some(2));
-	assert!(pf(Test::Bar(1.0)).is_none());
+	test_partial_function!(pf, Test::Foo(1), 2);
+	test_partial_function!(pf, Test::Bar(1.0), None);
 }
 
 #[test]
@@ -67,34 +69,23 @@ fn handles_pattern_guards() {
 		Test::Foo(a) if a == 2 => a + c2
 	};
 
-	assert_eq!(pf.is_defined_at(Test::Foo(1)), true);
-	assert_eq!(pf.is_defined_at(Test::Foo(2)), true);
-	assert_eq!(pf.is_defined_at(Test::Foo(3)), false);
-	assert_eq!(pf.is_defined_at(Test::Bar(1.0)), false);
-	assert!(pf(Test::Foo(1)).is_some() && pf(Test::Foo(1)) == Some(2));
-	assert!(pf(Test::Foo(2)).is_some() && pf(Test::Foo(2)) == Some(4));
-	assert!(pf(Test::Bar(1.0)).is_none());
+	test_partial_function!(pf, Test::Foo(1), 2);
+	test_partial_function!(pf, Test::Foo(2), 4);
+	test_partial_function!(pf, Test::Foo(3), None);
+	test_partial_function!(pf, Test::Bar(1.0), None);
 }
 
 #[test]
 fn handles_pattern_alternation() {
-	let c1 = 1;
-	let c2 = 2;
-
 	let pf = partial_function! {
 		1 | 2 => "foo",
 		3 => "bar"
 	};
 
-	assert_eq!(pf.is_defined_at(1), true);
-	assert_eq!(pf.is_defined_at(2), true);
-	assert_eq!(pf.is_defined_at(3), true);
-	assert_eq!(pf.is_defined_at(4), false);
-
-	assert!(pf(1).is_some() && pf(1) == Some("foo"));
-	assert!(pf(2).is_some() && pf(2) == Some("foo"));
-	assert!(pf(3).is_some() && pf(3) == Some("bar"));
-	assert!(pf(4).is_none());
+	test_partial_function!(pf, 1, "foo");
+	test_partial_function!(pf, 2, "foo");
+	test_partial_function!(pf, 3, "bar");
+	test_partial_function!(pf, 4, None);
 }
 
 #[test]
@@ -103,12 +94,10 @@ fn handles_inclusive_range() {
 		1...3 => "foo"
 	};
 
-	assert_eq!(pf.is_defined_at(1), true);
-	assert_eq!(pf.is_defined_at(2), true);
-	assert_eq!(pf.is_defined_at(3), true);
-	assert_eq!(pf.is_defined_at(4), false);
-	assert!(pf(1).is_some() && pf(1) == Some("foo"));
-	assert!(pf(4).is_none());
+	test_partial_function!(pf, 1, "foo");
+	test_partial_function!(pf, 2, "foo");
+	test_partial_function!(pf, 3, "foo");
+	test_partial_function!(pf, 4, None);
 }
 
 #[test]
@@ -117,8 +106,23 @@ fn handles_pattern_binding() {
 		a @ "foo" => a
 	};
 
-	assert_eq!(pf.is_defined_at("foo"), true);
-	assert_eq!(pf.is_defined_at("bar"), false);
-	assert!(pf("foo").is_some() && pf("foo") == Some("foo"));
-	assert!(pf("bar").is_none());
+	test_partial_function!(pf, "foo", "foo");
+	test_partial_function!(pf, "bar", None);
+}
+
+#[test]
+fn handles_all_of_it_mixed_together() {
+	let pf = partial_function! {
+		a @ 1...10 | a @ 21...30 if a % 2 == 0 => a/2,
+		a @ 11...20 | a @ 31...40 if a % 2 == 1 => a
+	};
+
+	test_partial_function!(pf, 1, None);
+	test_partial_function!(pf, 2, 1);
+	test_partial_function!(pf, 11, 11);
+	test_partial_function!(pf, 12, None);
+	test_partial_function!(pf, 21, None);
+	test_partial_function!(pf, 22, 11);
+	test_partial_function!(pf, 31, 31);
+	test_partial_function!(pf, 32, None);
 }
