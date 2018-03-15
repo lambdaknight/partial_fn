@@ -63,6 +63,7 @@ macro_rules! __call_macro (
 #[macro_export]
 macro_rules! __is_defined_at_macro (
 	($($($pat:pat)|+ $(if $cond:expr)? => $result:expr),*) => (
+		#[allow(unused_variables)]
 		|arg| {
 			match arg {
 				$(
