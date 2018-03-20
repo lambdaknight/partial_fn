@@ -1,4 +1,4 @@
-#![feature(macro_at_most_once_rep)]
+#![cfg_attr(feature = "unstable", feature(macro_at_most_once_rep))]
 
 #[macro_use] extern crate partial_function;
 
@@ -11,6 +11,17 @@ enum Test {
 	Baz(bool)
 }
 
+#[cfg(not(feature = "unstable"))]
+macro_rules! test_partial_function (
+	($var:expr, $lhs:expr, None) => (
+		assert!(!$var.is_defined_at($lhs) && $var.call($lhs).is_none())
+	);
+	($var:expr, $lhs:expr, $rhs:expr) => (
+		assert!($var.is_defined_at($lhs) && $var.call($lhs).is_some() && $var.call($lhs) == Some($rhs))
+	);
+);
+
+#[cfg(feature = "unstable")]
 macro_rules! test_partial_function (
 	($var:expr, $lhs:expr, None) => (
 		assert!(!$var.is_defined_at($lhs) && $var($lhs).is_none())
