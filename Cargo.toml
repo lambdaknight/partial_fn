@@ -1,5 +1,5 @@
 [package]
-name = "partial_function"
+name = "partial_fn"
 version = "0.1.0"
 authors = ["Turing Eret <eret@lambdacalcul.us>"]
 

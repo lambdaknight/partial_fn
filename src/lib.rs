@@ -9,7 +9,6 @@
 #![deny(unsafe_code)]
 #![deny(unused_import_braces)]
 #![deny(unused_qualifications)]
-
 #![cfg_attr(not(feature = "unstable"), deny(unstable_features))]
 #![cfg_attr(feature = "unstable", feature(fn_traits))]
 #![cfg_attr(feature = "unstable", feature(unboxed_closures))]
@@ -98,7 +97,7 @@ macro_rules! __is_defined_at_macro (
 );
 
 #[macro_export]
-macro_rules! partial_function (
+macro_rules! partial_fn (
     ($($($pat:pat)|+ $(if $cond:expr)* => $result:expr),*) => (
         PartialFn::new(
             Box::new(__call_macro!($($($pat)|+ $(if $cond)* => $result),*)),
