@@ -14,18 +14,68 @@
 #![cfg_attr(feature = "unstable", feature(unboxed_closures))]
 
 /// The `PartialFn` type.
+///
+/// # Type Arguments
+///
+/// * `A` – Type of the partial function input.
+/// * `B` – Type of the partial function output.
 pub struct PartialFn<'a, A, B> {
     __call_fn: Box<Fn(A) -> Option<B> + 'a>,
     __is_defined_at_fn: Box<Fn(A) -> bool + 'a>,
 }
 
 impl<'a, A, B> PartialFn<'a, A, B> {
-    /// TODO: call documentation
+    /// Applies the argument to the partial function.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `arg` – Intput to the partial function.
+    /// 
+    /// # Result
+    /// 
+    /// If `arg` is in the partial function's domain, returns the result of applying the partial
+    /// function to `arg` wrapped in
+    /// [Some](https://doc.rust-lang.org/std/option/enum.Option.html#variant.Some).
+    /// [None](https://doc.rust-lang.org/std/option/enum.Option.html#variant.None) otherwise.
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// # #[macro_use] extern crate partial_fn;
+    /// # use partial_fn::PartialFn;
+    /// # fn main() {
+    /// let pf = partial_fn! {
+    ///         1 => 2
+    /// };
+    /// assert_eq!(Some(2), pf.call(1));
+    /// # }
+    /// ```
     pub fn call(&self, arg: A) -> Option<B> {
         (*self.__call_fn)(arg)
     }
 
-    /// TODO: is_defined_at documentation
+    /// Checks if the partial function is defined at a given input.
+    ///
+    /// # Arguments
+    ///
+    /// * `arg` – Intput to the partial function.
+    ///
+    /// # Result
+    ///
+    /// True if the argument is within the partial function's domain. False otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate partial_fn;
+    /// # use partial_fn::PartialFn;
+    /// # fn main() {
+    /// let pf = partial_fn! {
+    ///         1 => 2
+    /// };
+    /// assert_eq!(true, pf.is_defined_at(1));
+    /// # }
+    /// ```
     pub fn is_defined_at(&self, arg: A) -> bool {
         (*self.__is_defined_at_fn)(arg)
     }
@@ -96,6 +146,34 @@ macro_rules! __is_defined_at_macro (
     );
 );
 
+/// Construct a partial function `PartialFn<A,B>` from a series of one or more match
+/// statements.
+///
+/// # Remarks
+/// 
+/// If the match arms provided represent a total function, then you will get an 
+/// "unreachable pattern" warning. This macro automatically generates a catch-all case and
+/// in the case of a total function, this catch-all case is superfluous. It can be safely
+/// ignored.
+///
+/// # Examples
+///
+/// ```rust
+/// # #[macro_use] extern crate partial_fn;
+/// # use partial_fn::PartialFn;
+/// # fn main() {
+/// let pf: PartialFn<i32, String> = partial_fn! {
+///         1 => "foo".to_string(),
+///         2 | 3 => "bar".to_string(),
+///         4...5 => "baz".to_string(),
+///         x if x >= 6 && x <= 7 => format!("qux{}", x)
+/// };
+/// assert_eq!(Some("foo".to_string()), pf.call(1));
+/// assert_eq!(Some("bar".to_string()), pf.call(2));
+/// assert_eq!(Some("baz".to_string()), pf.call(4));
+/// assert_eq!(Some("qux6".to_string()), pf.call(6));
+/// # }
+/// ```
 #[macro_export]
 macro_rules! partial_fn (
     ($($($pat:pat)|+ $(if $cond:expr)* => $result:expr),*) => (
