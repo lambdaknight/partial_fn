@@ -12,7 +12,6 @@
 
 #![cfg_attr(not(feature = "unstable"), deny(unstable_features))]
 #![cfg_attr(feature = "unstable", feature(fn_traits))]
-#![cfg_attr(feature = "unstable", feature(macro_at_most_once_rep))]
 #![cfg_attr(feature = "unstable", feature(unboxed_closures))]
 
 /// The `PartialFn` type.
@@ -67,7 +66,6 @@ impl<'a, A, B> FnOnce<(A,)> for PartialFn<'a, A, B> {
     }
 }
 
-#[cfg(not(feature = "unstable"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __call_macro (
@@ -83,23 +81,6 @@ macro_rules! __call_macro (
     );
 );
 
-#[cfg(feature = "unstable")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __call_macro (
-    ($($($pat:pat)|+ $(if $cond:expr)? => $result:expr),*) => (
-        |arg| {
-            match arg {
-                $(
-                    $($pat)|+ $(if $cond)? => Some($result)
-                ),*,
-                _ => None
-            }
-        }
-    );
-);
-
-#[cfg(not(feature = "unstable"))]
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __is_defined_at_macro (
@@ -116,41 +97,12 @@ macro_rules! __is_defined_at_macro (
     );
 );
 
-#[cfg(feature = "unstable")]
-#[macro_export]
-#[doc(hidden)]
-macro_rules! __is_defined_at_macro (
-    ($($($pat:pat)|+ $(if $cond:expr)? => $result:expr),*) => (
-        #[allow(unused_variables)]
-        |arg| {
-            match arg {
-                $(
-                    $($pat)|+ $(if $cond)? => true
-                ),*,
-                _ => false
-            }
-        }
-    );
-);
-
-#[cfg(not(feature = "unstable"))]
 #[macro_export]
 macro_rules! partial_function (
     ($($($pat:pat)|+ $(if $cond:expr)* => $result:expr),*) => (
         PartialFn::new(
             Box::new(__call_macro!($($($pat)|+ $(if $cond)* => $result),*)),
             Box::new(__is_defined_at_macro!($($($pat)|+ $(if $cond)* => $result),*))
-        )
-    );
-);
-
-#[cfg(feature = "unstable")]
-#[macro_export]
-macro_rules! partial_function (
-    ($($($pat:pat)|+ $(if $cond:expr)? => $result:expr),*) => (
-        PartialFn::new(
-            Box::new(__call_macro!($($($pat)|+ $(if $cond)? => $result),*)),
-            Box::new(__is_defined_at_macro!($($($pat)|+ $(if $cond)? => $result),*))
         )
     );
 );
