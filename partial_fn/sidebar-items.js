@@ -1,0 +1,1 @@
+initSidebarItems({"macro":[["partial_fn","Construct a partial function `PartialFn<A,B>` from a series of one or more match statements."]],"struct":[["PartialFn","The `PartialFn` type."]]});
