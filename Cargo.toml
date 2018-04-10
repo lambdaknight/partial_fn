@@ -2,10 +2,17 @@
 name = "partial_fn"
 version = "0.1.0"
 authors = ["Turing Eret <eret@lambdacalcul.us>"]
+repository = "https://github.com/lambdaknight/partial_fn"
+homepage = "https://github.com/lambdaknight/partial_fn"
+license = "MIT"
+readme = "README.md"
+documentation = "https://lambdaknight.github.io/partial_fn"
+description = "Construct a partial function from a series of match statements."
+
+[dependencies]
 
 [features]
 default = []
 
 unstable = []
 
-[dependencies]
