@@ -8,6 +8,7 @@ license = "MIT"
 readme = "README.md"
 documentation = "https://lambdaknight.github.io/partial_fn"
 description = "Construct a partial function from a series of match statements."
+edition = "2021"
 
 [dependencies]
 

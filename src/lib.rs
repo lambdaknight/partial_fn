@@ -20,8 +20,8 @@
 /// * `A` – Type of the partial function input.
 /// * `B` – Type of the partial function output.
 pub struct PartialFn<'a, A, B> {
-    __call_fn: Box<Fn(A) -> Option<B> + 'a>,
-    __is_defined_at_fn: Box<Fn(A) -> bool + 'a>,
+    __call_fn: Box<dyn Fn(A) -> Option<B> + 'a>,
+    __is_defined_at_fn: Box<dyn Fn(A) -> bool + 'a>,
 }
 
 impl<'a, A, B> PartialFn<'a, A, B> {
@@ -82,8 +82,8 @@ impl<'a, A, B> PartialFn<'a, A, B> {
 
     #[doc(hidden)]
     pub fn new(
-        call: Box<Fn(A) -> Option<B> + 'a>,
-        defined: Box<Fn(A) -> bool + 'a>,
+        call: Box<dyn Fn(A) -> Option<B> + 'a>,
+        defined: Box<dyn Fn(A) -> bool + 'a>,
     ) -> PartialFn<'a, A, B> {
         PartialFn {
             __call_fn: call,
@@ -117,34 +117,37 @@ impl<'a, A, B> FnOnce<(A,)> for PartialFn<'a, A, B> {
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! __call_macro (
-    ($($($pat:pat)|+ $(if $cond:expr)* => $result:expr),*) => (
+macro_rules! __call_macro {
+    ($($($pat:pat_param)|+ $(if $cond:expr)? => $result:expr),*) => (
+        #[allow(unused_variables)]
+        #[allow(unreachable_code)]
         |arg| {
             match arg {
                 $(
-                    $($pat)|+ $(if $cond)* => Some($result)
+                    $($pat)|+ $(if $cond)? => Some($result)
                 ),*,
-                _ => None
+                _ => None,
             }
         }
     );
-);
+}
 
 #[macro_export]
 #[doc(hidden)]
-macro_rules! __is_defined_at_macro (
-    ($($($pat:pat)|+ $(if $cond:expr)* => $result:expr),*) => (
+macro_rules! __is_defined_at_macro {
+    ($($($pat:pat_param)|+ $(if $cond:expr)? => $result:expr),*) => (
         #[allow(unused_variables)]
+        #[allow(unreachable_code)]
         |arg| {
             match arg {
                 $(
-                    $($pat)|+ $(if $cond)* => true
+                    $($pat)|+ $(if $cond)? => true
                 ),*,
-                _ => false
+                _ => false,
             }
         }
     );
-);
+}
 
 /// Construct a partial function `PartialFn<A,B>` from a series of one or more match
 /// statements.
@@ -165,7 +168,7 @@ macro_rules! __is_defined_at_macro (
 /// let pf: PartialFn<i32, String> = partial_fn! {
 ///         1 => "foo".to_string(),
 ///         2 | 3 => "bar".to_string(),
-///         4...5 => "baz".to_string(),
+///         4..=5 => "baz".to_string(),
 ///         x if x >= 6 && x <= 7 => format!("qux{}", x)
 /// };
 /// assert_eq!(Some("foo".to_string()), pf.call(1));
@@ -175,11 +178,11 @@ macro_rules! __is_defined_at_macro (
 /// # }
 /// ```
 #[macro_export]
-macro_rules! partial_fn (
-    ($($($pat:pat)|+ $(if $cond:expr)* => $result:expr),*) => (
+macro_rules! partial_fn {
+    ($($($pat:pat_param)|+ $(if $cond:expr)* => $result:expr),*$(,)*) => (
         PartialFn::new(
             Box::new(__call_macro!($($($pat)|+ $(if $cond)* => $result),*)),
             Box::new(__is_defined_at_macro!($($($pat)|+ $(if $cond)* => $result),*))
         )
     );
-);
+}
